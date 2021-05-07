@@ -1,0 +1,42 @@
+import requests.exceptions as re
+import warnings
+import geopandas as gpd
+import time
+
+from utils import data_prep as dp
+from utils import data_downloader as dd
+from utils import data_vis as dv
+from utils import helpers as h
+
+warnings.simplefilter("ignore", (UserWarning, FutureWarning, RuntimeWarning))
+
+if __name__ == "__main__":
+
+    ## file paths
+    DATA_FILE_PATH = '../data/'
+    NETCDF_FILE_PATH = DATA_FILE_PATH + 'netcdf/'
+    TEMP_NETCDF_FILE_PATH = DATA_FILE_PATH + 'temp_netcdf/'
+
+    ## read in plume data
+    plumes_df = gpd.read_file(DATA_FILE_PATH + "smoke_plumes/us_plumes_2018-2020.geojson")
+
+    ## temp plume data
+    temp_plumes_df = plumes_df[(plumes_df['conus_time'].str.slice(0,2)>='12') & (plumes_df['conus_time'].str.slice(0,2)<='23') & (plumes_df['conus_time'].str.slice(2,4).isin(['02','01','31','32']))]
+
+
+    start_time = time.time()
+    print("Starting download")
+
+    while True:
+        try:
+            dd.goes_download_wrapper_satpy(smoke_plume_data=temp_plumes_df,
+                                           temp_data_path=TEMP_NETCDF_FILE_PATH,
+                                     save_data_path=NETCDF_FILE_PATH, 
+                                     extra_desc='', 
+                                     bounds=(-124.5, 24.4, -66.6, 49.3), 
+                                     bands=[1,2,3,7,11])
+            break
+        except (re.SSLError, re.ConnectionError, re.ChunkedEncodingError) as e:
+            print("Connection Error. Continuing.")
+            
+    print("--- %s seconds ---" % (time.time() - start_time))

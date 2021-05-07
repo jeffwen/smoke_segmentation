@@ -1,0 +1,6 @@
+data/*
+.DS_Store*
+.satpy_temp/*
+*.ipynb_checkpoints*
+*.pyc
+src/models/*
