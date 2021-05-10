@@ -198,7 +198,7 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
             logger.add_figure('train_images', log_img, step)
             
 
-    print('Training Loss: {:.4f} Acc: {:.4f}'.format(train_loss.avg, train_acc.avg))
+    print(f"  Training Loss: {train_loss.avg:.4f} Acc: {train_acc.avg:.4f}")
     print()
 
     return {'train_loss': train_loss.avg, 'train_acc': train_acc.avg}
@@ -266,7 +266,7 @@ def validation(valid_loader, model, criterion, logger, epoch_num, logger_freq=4)
             log_img = data_vis.show_tensorboard_image(data['sat_img'], data['map_img'], outputs)
             logger.add_figure('valid_images', log_img, step)
 
-    print('Validation Loss: {:.4f} Acc: {:.4f}'.format(valid_loss.avg, valid_acc.avg))
+    print(f"  Validation Loss: {valid_loss.avg:.4f} Acc: {valid_acc.avg:.4f}")
     print()
 
     return {'valid_loss': valid_loss.avg, 'valid_acc': valid_acc.avg}
