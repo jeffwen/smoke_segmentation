@@ -3,4 +3,7 @@ data/*
 .satpy_temp/*
 *.ipynb_checkpoints*
 *.pyc
-src/models/*
+src/models/checkpoint/*
+etc/*
+checkpoints/*
+logs/*

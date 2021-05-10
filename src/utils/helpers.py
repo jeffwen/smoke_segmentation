@@ -370,24 +370,27 @@ def latlng_to_rad_bbox(bounds, goes_proj_details=None):
 
     return (x1, y1, x2, y2)
 
-def create_train_test(idx_list, train_perc, random_state=42):
+def create_train_val_test(idx_list, train_perc, random_state=42):
     """
     Create split list
     Args:
-        idx_list: must be a list of idx integers
+        idx_list: list of img slug names
         train_perc: training percentage from dataset
 
-    Returns: list with 'train', 'test' values
+    Returns: list with 'train', 'valid', 'test' values
 
     """
-    idx_split = train_test_split(idx_list,
+    # split train and test
+    train_idx_split, test_idx_split = train_test_split(idx_list,
                                  random_state=random_state,
                                  train_size=train_perc)
+    
+    # split val off of test (50% for validation)
+    val_idx_split, test_idx_split = train_test_split(test_idx_split,
+                             random_state=random_state,
+                             train_size=0.5)
 
-    train_test_list = np.array(['train'] * len(idx_list))
-    train_test_list[idx_split[1]] = 'test'
-
-    return (train_test_list)
+    return train_idx_split, val_idx_split, test_idx_split
 
 ## adapted from https://solaris.readthedocs.io/en/latest/api/utils.html#solaris.utils.geo.polygon_to_coco
 def polygon_to_coco(polygon):
