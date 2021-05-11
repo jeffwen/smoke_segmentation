@@ -406,3 +406,11 @@ def polygon_to_coco(polygon):
     coords = [item for coordinate in coords for item in coordinate]
 
     return coords
+
+## logger for training
+def logger(info_str, log_fn_slug="../training_logs/training_log"):
+    ## write to log file
+    log = open(log_fn_slug+'.txt', "a+")  # append mode and create file if it doesnt exist
+    log.write(info_str +
+              "\n")
+    log.close()

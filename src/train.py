@@ -36,6 +36,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
     """
     since = time.time()
+    logger("START TRAINING", log_fn_slug=f"../training_logs/run_{run}_training_log")
 
     # get model
     model = unet.UNetSmall()
@@ -96,6 +97,8 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
+        
+        logger('Epoch {epoch}/{num_epochs - 1}', log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # step the learning rate scheduler
         lr_scheduler.step()
@@ -117,6 +120,9 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
         cur_elapsed = time.time() - since
         print('Current elapsed time {:.0f}m {:.0f}s'.format(cur_elapsed // 60, cur_elapsed % 60))
+        
+        logger('    Epoch {epoch} elapsed time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s', 
+               log_fn_slug=f"../training_logs/run_{run}_training_log")
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
@@ -164,14 +170,18 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         outputs = torch.nn.functional.sigmoid(outputs)
 
         loss = criterion(outputs, labels)
-        
+                
         # backward
         loss.backward()
         optimizer.step()
-        
+
         train_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         train_loss.update(loss.item(), outputs.size(0))
-
+        
+        if idx % 50 == 0:
+            logger('    batch: {idx}| loss: {train_loss.avg:.4f}| acc: {train_acc.avg:.4f}', 
+                   log_fn_slug=f"../training_logs/run_{run}_training_log")
+        
         # tensorboard logging
         if idx % log_iter == 0:
 
@@ -248,6 +258,10 @@ def validation(valid_loader, model, criterion, logger, epoch_num, logger_freq=4)
 
         valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         valid_loss.update(loss.item(), outputs.size(0))
+        
+        if idx % 50 == 0:
+            logger('    batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
+                   log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # tensorboard logging
         if idx % log_iter == 0:
