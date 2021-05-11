@@ -8,3 +8,4 @@ src/models/*.pth
 etc/*
 checkpoints/*
 logs/*
+training_logs/*

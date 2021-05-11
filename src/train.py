@@ -36,7 +36,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
     """
     since = time.time()
-    logger("START TRAINING", log_fn_slug=f"../training_logs/run_{run}_training_log")
+    progress_logger("START TRAINING", log_fn_slug=f"../training_logs/run_{run}_training_log")
 
     # get model
     model = unet.UNetSmall()
@@ -98,14 +98,14 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
         
-        logger('Epoch {epoch}/{num_epochs - 1}', log_fn_slug=f"../training_logs/run_{run}_training_log")
+        progress_logger(f'Epoch {epoch}/{num_epochs - 1}', log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # step the learning rate scheduler
         lr_scheduler.step()
 
         # run training and validation
-        train_metrics = train(train_dataloader, model, criterion, optimizer, lr_scheduler, train_logger, epoch, logger_freq)
-        valid_metrics = validation(val_dataloader, model, criterion, val_logger, epoch, logger_freq)
+        train_metrics = train(train_dataloader, model, criterion, optimizer, lr_scheduler, train_logger, epoch, run, logger_freq)
+        valid_metrics = validation(val_dataloader, model, criterion, val_logger, epoch, run, logger_freq)
 
         # store best loss and save a model checkpoint
         is_best = valid_metrics['valid_loss'] < best_loss
@@ -120,15 +120,22 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
         cur_elapsed = time.time() - since
         print('Current elapsed time {:.0f}m {:.0f}s'.format(cur_elapsed // 60, cur_elapsed % 60))
-        
-        logger('    Epoch {epoch} elapsed time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s', 
+
+        progress_logger(f"train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
+
+        progress_logger(f'Epoch {epoch} elapsed time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s', log_fn_slug=f"../training_logs/run_{run}_training_log")
+
+        progress_logger(f'-'*10,log_fn_slug=f"../training_logs/run_{run}_training_log")
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
+    progress_logger(f'Total elapsed time: {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s',
+               log_fn_slug=f"../training_logs/run_{run}_training_log")
 
-def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_num, logger_freq=4):
+
+def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_num, run, logger_freq=4):
     """
 
     Args:
@@ -178,8 +185,8 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         train_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         train_loss.update(loss.item(), outputs.size(0))
         
-        if idx % 50 == 0:
-            logger('    batch: {idx}| loss: {train_loss.avg:.4f}| acc: {train_acc.avg:.4f}', 
+        if idx % 5 == 0:
+            progress_logger(f'    batch: {idx}| train_loss: {train_loss.avg:.4f}| train_acc: {train_acc.avg:.4f}', 
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
         
         # tensorboard logging
@@ -215,7 +222,7 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
     return {'train_loss': train_loss.avg, 'train_acc': train_acc.avg}
 
 
-def validation(valid_loader, model, criterion, logger, epoch_num, logger_freq=4):
+def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_freq=4):
     """
 
     Args:
@@ -259,8 +266,8 @@ def validation(valid_loader, model, criterion, logger, epoch_num, logger_freq=4)
         valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         valid_loss.update(loss.item(), outputs.size(0))
         
-        if idx % 50 == 0:
-            logger('    batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
+        if idx % 5 == 0:
+            progress_logger(f'    batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # tensorboard logging
@@ -298,6 +305,14 @@ def save_checkpoint(state, is_best, filename='../checkpoints/checkpoint.pth.tar'
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, '../checkpoints/model_best.pth.tar')
+
+## logger for training
+def progress_logger(info_str, log_fn_slug="../training_logs/training_log"):
+    ## write to log file
+    log = open(log_fn_slug+'.txt', "a+")  # append mode and create file if it doesnt exist
+    log.write(info_str +
+              "\n")
+    log.close()
 
 
 if __name__ == '__main__':
