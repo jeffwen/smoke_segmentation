@@ -4,6 +4,7 @@ data/*
 *.ipynb_checkpoints*
 *.pyc
 src/models/checkpoint/*
+src/models/*.pth
 etc/*
 checkpoints/*
 logs/*

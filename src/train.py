@@ -38,14 +38,15 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     since = time.time()
 
     # get model
-    #model = unet.UNetSmall()
-    model = unet.UNet()
+    model = unet.UNetSmall()
+    #model = unet.UNet()
 
     if torch.cuda.is_available():
         model = model.cuda()
 
     # set up binary cross entropy and dice loss
-    criterion = metrics.BCEDiceLoss()
+    #criterion = metrics.BCEDiceLoss()
+    criterion = nn.BCELoss()
 
     # optimizer
     # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
@@ -108,7 +109,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         best_loss = min(valid_metrics['valid_loss'], best_loss)
         save_checkpoint({
             'epoch': epoch,
-            'arch': 'UNet',
+            'arch': 'UNetSmall',
             'state_dict': model.state_dict(),
             'best_loss': best_loss,
             'optimizer': optimizer.state_dict()
@@ -295,13 +296,13 @@ if __name__ == '__main__':
                         help='epoch to start from (used with resume flag')
     parser.add_argument('-b', '--batch-size', default=16, type=int,
                         metavar='N', help='mini-batch size (default: 16)')
-    parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
+    parser.add_argument('--lr', '--learning-rate', default=0.0005, type=float,
                         metavar='LR', help='initial learning rate')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                         help='momentum')
     parser.add_argument('--bands', nargs="+", default=["true_color"],
                         help='input channels to read in as input')
-    parser.add_argument('--logger-freq', default=4, type=int, metavar='N',
+    parser.add_argument('--logger-freq', default=10, type=int, metavar='N',
                         help='number of times to log per epoch')
     parser.add_argument('--run', default=0, type=int, metavar='N',
                         help='number of run (for tensorboard logging)')
