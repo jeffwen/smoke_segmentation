@@ -67,27 +67,62 @@ def show_map_batch(sample_batched, img_to_show=3, save_file_path=None, as_numpy=
 
         return mplimage
 
-
-def show_tensorboard_image(sat_img, map_img, out_img, save_file_path=None, as_numpy=False):
+    
+def show_tensorboard_image(sat_img, map_img, out_img, save_file_path=None):
     """
-    Show 3 images side by side for verification on tensorboard. Takes in torch tensors.
+    Show images side by side for verification on tensorboard. Takes in torch tensors.
     """
     # show different image from the batch
     batch_size = sat_img.size(0)
     img_num = np.random.randint(batch_size)
+    
+    if sat_img.size(1) == 5:
+        f, ax = plt.subplots(1, 5, figsize=(12, 5))
+        f.tight_layout()
+        f.subplots_adjust(hspace=.05, wspace=.05)
+        ax = ax.ravel()
+        
+        # plot the true_color and second channel image
+        ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
+        ax[0].axis('off')
+        ax[1].imshow(sat_img[img_num,3:4,:,:].squeeze().cpu().numpy())
+        ax[1].axis('off')
+        ax[2].imshow(sat_img[img_num,4:5,:,:].squeeze().cpu().numpy())
+        ax[2].axis('off')
+        ax[3].imshow(map_img[img_num,0,:,:].cpu().numpy())
+        ax[3].axis('off')
+        ax[4].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
+        ax[4].axis('off')
+        
+    elif sat_img.size(1) == 4:
+        f, ax = plt.subplots(1, 4, figsize=(12, 5))
+        f.tight_layout()
+        f.subplots_adjust(hspace=.05, wspace=.05)
+        ax = ax.ravel()
 
-    f, ax = plt.subplots(1, 3, figsize=(12, 5))
-    f.tight_layout()
-    f.subplots_adjust(hspace=.05, wspace=.05)
-    ax = ax.ravel()
+        # plot the true_color and second channel image
+        ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
+        ax[0].axis('off')
+        ax[1].imshow(sat_img[img_num,3:4,:,:].squeeze().cpu().numpy())
+        ax[1].axis('off')
+        ax[2].imshow(map_img[img_num,0,:,:].cpu().numpy())
+        ax[2].axis('off')
+        ax[3].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
+        ax[3].axis('off')
+        
+    else:
+        f, ax = plt.subplots(1, 3, figsize=(12, 5))
+        f.tight_layout()
+        f.subplots_adjust(hspace=.05, wspace=.05)
+        ax = ax.ravel()
 
-    # just plot the true_color image
-    ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
-    ax[0].axis('off')
-    ax[1].imshow(map_img[img_num,0,:,:].cpu().numpy())
-    ax[1].axis('off')
-    ax[2].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
-    ax[2].axis('off')
+        # just plot the true_color image
+        ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
+        ax[0].axis('off')
+        ax[1].imshow(map_img[img_num,0,:,:].cpu().numpy())
+        ax[1].axis('off')
+        ax[2].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
+        ax[2].axis('off')
     
     return(f)
 
@@ -102,3 +137,27 @@ def show_tensorboard_image(sat_img, map_img, out_img, save_file_path=None, as_nu
 #         plt.close(f)
 
 #         return mplimage
+
+
+# def show_tensorboard_image_old(sat_img, map_img, out_img, save_file_path=None, as_numpy=False):
+#     """
+#     Show 3 images side by side for verification on tensorboard. Takes in torch tensors.
+#     """
+#     # show different image from the batch
+#     batch_size = sat_img.size(0)
+#     img_num = np.random.randint(batch_size)
+
+#     f, ax = plt.subplots(1, 3, figsize=(12, 5))
+#     f.tight_layout()
+#     f.subplots_adjust(hspace=.05, wspace=.05)
+#     ax = ax.ravel()
+
+#     # just plot the true_color image
+#     ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
+#     ax[0].axis('off')
+#     ax[1].imshow(map_img[img_num,0,:,:].cpu().numpy())
+#     ax[1].axis('off')
+#     ax[2].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
+#     ax[2].axis('off')
+    
+#     return(f)

@@ -36,11 +36,10 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
     """
     since = time.time()
-    progress_logger("START TRAINING", log_fn_slug=f"../training_logs/run_{run}_training_log")
 
     # get model
-    model = unet.UNetSmall()
-    #model = unet.UNet()
+    model = unet.UNetSmall(num_channels=len(bands)+2)
+    #model = unet.UNet(num_channels=len(bands)+2)
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -94,11 +93,15 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     train_logger = SummaryWriter(f'../logs/run_{run}/training')
     val_logger = SummaryWriter(f'../logs/run_{run}/validation')
     
+    progress_logger("START TRAINING| start lr: {lr_scheduler.get_last_lr()}| bs: {batch_size}| bands: {bands}",
+                    log_fn_slug=f"../training_logs/run_{run}_training_log")
+    
     for epoch in range(start_epoch, num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print(f'Epoch {epoch}/{num_epochs - 1}| lr: {lr_scheduler.get_last_lr()}')
         print('-' * 10)
         
-        progress_logger(f'Epoch {epoch}/{num_epochs - 1}', log_fn_slug=f"../training_logs/run_{run}_training_log")
+        progress_logger(f'Epoch {epoch}/{num_epochs - 1}| lr: {lr_scheduler.get_last_lr()}', 
+                        log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # step the learning rate scheduler
         lr_scheduler.step()
@@ -121,10 +124,9 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         cur_elapsed = time.time() - since
         print('Current elapsed time {:.0f}m {:.0f}s'.format(cur_elapsed // 60, cur_elapsed % 60))
 
-        progress_logger(f"train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}",
+        # log training progress
+        progress_logger(f"Epoch {epoch}| train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}| time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s'",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
-
-        progress_logger(f'Epoch {epoch} elapsed time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s', log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         progress_logger(f'-'*10,log_fn_slug=f"../training_logs/run_{run}_training_log")
 
@@ -186,7 +188,7 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         train_loss.update(loss.item(), outputs.size(0))
         
         if idx % 5 == 0:
-            progress_logger(f'    batch: {idx}| train_loss: {train_loss.avg:.4f}| train_acc: {train_acc.avg:.4f}', 
+            progress_logger(f'    epoch: {epoch_num}| batch: {idx}| train_loss: {train_loss.avg:.4f}| train_acc: {train_acc.avg:.4f}', 
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
         
         # tensorboard logging
@@ -210,8 +212,6 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
                 logger.add_histogram(tag + '/grad', value.grad.data.cpu().numpy(), step, bins='auto')
 
             # log the sample images
-            #log_img = [data_utils.show_tensorboard_image(data['sat_img'], data['map_img'], outputs, as_numpy=True),]
-            #logger.image_summary('train_images', log_img, step)
             log_img = data_vis.show_tensorboard_image(data['sat_img'], data['map_img'], outputs)
             logger.add_figure('train_images', log_img, step)
             
@@ -267,7 +267,7 @@ def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_fr
         valid_loss.update(loss.item(), outputs.size(0))
         
         if idx % 5 == 0:
-            progress_logger(f'    batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
+            progress_logger(f'    epoch: {epoch_num}| batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         # tensorboard logging

@@ -70,11 +70,11 @@ class UNet(nn.Module):
     """
     Main UNet architecture
     """
-    def __init__(self, num_classes=1):
+    def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
         # encoding
-        self.conv1 = encoding_block(3, 64)
+        self.conv1 = encoding_block(num_channels, 64)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
 
         self.conv2 = encoding_block(64, 128)
@@ -135,11 +135,11 @@ class UNetSmall(nn.Module):
     """
     Main UNet architecture
     """
-    def __init__(self, num_classes=1):
+    def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
         # encoding
-        self.conv1 = encoding_block(3, 32)
+        self.conv1 = encoding_block(num_channels, 32)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
 
         self.conv2 = encoding_block(32, 64)
