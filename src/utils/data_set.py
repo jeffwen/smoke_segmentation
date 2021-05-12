@@ -23,7 +23,7 @@ class WildfireSmokeDataset(Dataset):
         self.train_val_test = train_val_test
         self.root_dir = root_dir
         self.bands = bands
-        self.img_path_df = self._filter_df(csv_file).head(25)
+        self.img_path_df = self._filter_df(csv_file)
         self.transform = transform
 
     def __len__(self):

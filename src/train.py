@@ -93,7 +93,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     train_logger = SummaryWriter(f'../logs/run_{run}/training')
     val_logger = SummaryWriter(f'../logs/run_{run}/validation')
     
-    progress_logger("START TRAINING| start lr: {lr_scheduler.get_last_lr()}| bs: {batch_size}| bands: {bands}",
+    progress_logger(f"START TRAINING | start lr: {lr_scheduler.get_last_lr()}| bs: {batch_size}| bands: {bands}",
                     log_fn_slug=f"../training_logs/run_{run}_training_log")
     
     for epoch in range(start_epoch, num_epochs):
@@ -125,7 +125,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         print('Current elapsed time {:.0f}m {:.0f}s'.format(cur_elapsed // 60, cur_elapsed % 60))
 
         # log training progress
-        progress_logger(f"Epoch {epoch}| train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}| time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s'",
+        progress_logger(f"Epoch {epoch}| train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}| time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         progress_logger(f'-'*10,log_fn_slug=f"../training_logs/run_{run}_training_log")
