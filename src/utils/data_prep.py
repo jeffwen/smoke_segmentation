@@ -176,19 +176,22 @@ def img_crop_coordinates(img, output_size):
     th, tw = (output_size, output_size)
     if w == tw and h == th:
         return 0, 0
-
+    
     i = random.randint(0, h - th)
     j = random.randint(0, w - tw)
 
     return i, j
 
-def img_crop(csv_df, output_size, num_crops):
+def img_crop(csv_df, output_size, num_crops, mask_dir="mask", crop_dir="crops", random_state=42):
     """ Create crops of the same height and width"""
 
     img_path = '../data/img/'
-    map_path = '../data/mask/'
+    map_path = f'../data/{mask_dir}/'
 
-    for row in tqdm(csv_df.itertuples()):
+    # set random seed and sort dataframe so random order is replicable
+    random.seed(a=random_state, version=2)
+
+    for row in tqdm(csv_df.sort_values('true_color').itertuples()):
 
         # max tries counter
         counter = 0
@@ -225,11 +228,11 @@ def img_crop(csv_df, output_size, num_crops):
             final_c11_img = Image.fromarray(cropped_c11_img[:,:,:3])
             final_map_img = Image.fromarray(cropped_map_img[:,:,:3])
 
-            final_sat_img.save(f"../data/crops/img/{row.true_color.split('.')[0]}_{num_crop}.png", compression=None)
-            final_c07_img.save(f"../data/crops/img/{row.C07.split('.')[0]}_{num_crop}.png", compression=None)
-            final_c11_img.save(f"../data/crops/img/{row.C11.split('.')[0]}_{num_crop}.png", compression=None)
-            final_map_img.save(f"../data/crops/mask/{row.mask.split('.')[0]}_{num_crop}.png", compression=None)
-
+            final_sat_img.save(f"../data/{crop_dir}/img/{row.true_color.split('.')[0]}_{num_crop}.png", compression=None)
+            final_c07_img.save(f"../data/{crop_dir}/img/{row.C07.split('.')[0]}_{num_crop}.png", compression=None)
+            final_c11_img.save(f"../data/{crop_dir}/img/{row.C11.split('.')[0]}_{num_crop}.png", compression=None)
+            final_map_img.save(f"../data/{crop_dir}/mask/{row.mask.split('.')[0]}_{num_crop}.png", compression=None)
+        
 
 ## COCO ANNOTATION 
 ## for creating coco annotations to modify smoke polygons 

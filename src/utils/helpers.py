@@ -370,6 +370,25 @@ def latlng_to_rad_bbox(bounds, goes_proj_details=None):
 
     return (x1, y1, x2, y2)
 
+def create_train_test(idx_list, train_perc, random_state=42):
+    """
+    Create split list
+    Args:
+        idx_list: must be a list of idx integers
+        train_perc: training percentage from dataset
+
+    Returns: list with 'train', 'test' values
+
+    """
+    idx_split = train_test_split(idx_list,
+                                 random_state=random_state,
+                                 train_size=train_perc)
+
+    train_test_list = np.array(['train'] * len(idx_list))
+    train_test_list[idx_split[1]] = 'test'
+
+    return (train_test_list)
+
 def create_train_val_test(idx_list, train_perc, random_state=42):
     """
     Create split list

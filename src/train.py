@@ -36,6 +36,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
     """
     since = time.time()
+    cur_time = since
 
     # get model
     model = unet.UNetSmall(num_channels=len(bands)+2)
@@ -86,14 +87,11 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=3, num_workers=num_workers, shuffle=False)
 
-    # loggers
-    #train_logger = logger.Logger('../logs/run_{}/training'.format(str(run)), print_freq)
-    #val_logger = logger.Logger('../logs/run_{}/validation'.format(str(run)), print_freq)
-    
+    # loggers    
     train_logger = SummaryWriter(f'../logs/run_{run}/training')
     val_logger = SummaryWriter(f'../logs/run_{run}/validation')
     
-    progress_logger(f"START TRAINING | start lr: {lr_scheduler.get_last_lr()}| bs: {batch_size}| bands: {bands}",
+    progress_logger(f"START TRAINING| run {run} | start lr: {lr_scheduler.get_last_lr()}| bs: {batch_size}| bands: {bands}",
                     log_fn_slug=f"../training_logs/run_{run}_training_log")
     
     for epoch in range(start_epoch, num_epochs):
@@ -118,14 +116,25 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
             'arch': 'UNetSmall',
             'state_dict': model.state_dict(),
             'best_loss': best_loss,
-            'optimizer': optimizer.state_dict()
-        }, is_best)
+            'optimizer': optimizer.state_dict()}, 
+            is_best,
+            checkpoint_fn=f"../checkpoints/checkpoint_run{run}.pth.tar",
+            best_fn=f"../checkpoints/best_run{run}.pth.tar")
 
-        cur_elapsed = time.time() - since
+        total_time = time.time() - since
+        cur_elapsed = time.time() - cur_time
+        cur_time = time.time()
         print('Current elapsed time {:.0f}m {:.0f}s'.format(cur_elapsed // 60, cur_elapsed % 60))
 
         # log training progress
-        progress_logger(f"Epoch {epoch}| train_loss: {train_metrics['train_loss']:.4f} | train_acc: {train_metrics['train_acc']:.4f}| val_loss: {valid_metrics['valid_loss']:.4f}| val_acc: {valid_metrics['valid_acc']:.4f}| time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s",
+        progress_logger(f"Epoch {epoch}| " + 
+                        f"train_loss: {train_metrics['train_loss']:.4f}| " + \
+                        f"train_acc: {train_metrics['train_acc']:.4f}| " + \
+                        f"val_loss: {valid_metrics['valid_loss']:.4f}| " + \
+                        f"val_acc: {valid_metrics['valid_acc']:.4f}| " + \
+                        f"best_model: {is_best}| " + \
+                        f"cur_time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s" + \
+                        f"tot_time: {total_time // 60:.0f}m {total_time % 60:.0f}s",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
 
         progress_logger(f'-'*10,log_fn_slug=f"../training_logs/run_{run}_training_log")
@@ -295,16 +304,16 @@ def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_fr
 
 
 # create a function to save the model state (https://github.com/pytorch/examples/blob/master/imagenet/main.py)
-def save_checkpoint(state, is_best, filename='../checkpoints/checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, checkpoint_fn="../checkpoints/checkpoint.pth.tar", best_fn="../checkpoints/best_model.pth.tar"):
     """
     :param state:
     :param is_best:
     :param filename:
     :return:
     """
-    torch.save(state, filename)
+    torch.save(state, checkpoint_fn)
     if is_best:
-        shutil.copyfile(filename, '../checkpoints/model_best.pth.tar')
+        shutil.copyfile(checkpoint_fn, best_fn)
 
 ## logger for training
 def progress_logger(info_str, log_fn_slug="../training_logs/training_log"):
@@ -340,5 +349,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # check if there are previous runs
+    experiments = [int(run_dir.split('_')[1]) for run_dir in os.listdir('../logs') if run_dir!='.DS_Store']
+    if args.run not in experiments:
+        run_num = args.run
+    elif (len(experiments) > 0):
+        run_num = max(experiments) + 1
+
+    # run training
     main(args.data, batch_size=args.batch_size, num_epochs=args.epochs, start_epoch=args.start_epoch, learning_rate=args.lr,
-         momentum=args.momentum, bands=args.bands, logger_freq=args.logger_freq, run=args.run, resume=args.resume)
+         momentum=args.momentum, bands=args.bands, logger_freq=args.logger_freq, run=run_num, resume=args.resume)
