@@ -4,8 +4,13 @@ import numpy as np
 import pandas as pd
 import glob
 import os
-from skimage import io
+#from skimage import io
+from PIL import Image, ImageFile
 from torch.utils.data.dataset import Dataset
+
+# some images dont load properly, but dont seem to have problems
+# doing this to get around issue
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class WildfireSmokeDataset(Dataset):
     """
@@ -32,15 +37,17 @@ class WildfireSmokeDataset(Dataset):
     def __getitem__(self, idx):
         
         # read in true color image
-        sat_img_name = os.path.join('../data', self.root_dir, self.train_val_test, self.img_path_df.loc[idx, 'true_color'])
-        sat_image = io.imread(sat_img_name)
-        
+        #sat_img_name = os.path.join('../data', self.root_dir, self.train_val_test, self.img_path_df.loc[idx, 'true_color'])
+        #sat_image = io.imread(sat_img_name)
+        #sat_image = np.array(Image.open(sat_img_name))        
+
         # read in images
         temp_img_list = []
         for band in self.bands:
             
             temp_img_name = os.path.join('../data', self.root_dir, self.train_val_test, self.img_path_df.loc[idx, band])
-            temp_img = io.imread(temp_img_name)
+            #temp_img = io.imread(temp_img_name)
+            temp_img = np.array(Image.open(temp_img_name))
 
             # add image to dict
             if band == 'true_color':
@@ -57,8 +64,9 @@ class WildfireSmokeDataset(Dataset):
 
         # read in mask (only binary mask so one channel)
         map_img_name = os.path.join('../data', self.root_dir, self.train_val_test, self.img_path_df.loc[idx, 'mask'])
-        map_image = io.imread(map_img_name)[:,:,0]
-        
+        #map_image = io.imread(map_img_name)[:,:,0]
+        map_image = np.array(Image.open(map_img_name))[:,:,0]        
+
         sample = {'sat_img': sat_image, 'map_img': map_image}
         
         if self.transform:

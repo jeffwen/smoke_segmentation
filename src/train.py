@@ -38,6 +38,9 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
     since = time.time()
     cur_time = since
 
+    # get files directory (assuming index file is at root level in data dir)
+    data_root_dir = data_path.split('/')[-2]
+
     # get model
     model = unet.UNetSmall(num_channels=len(bands)+2)
     #model = unet.UNet(num_channels=len(bands)+2)
@@ -77,15 +80,15 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
             print("=> no checkpoint found at '{}'".format(args.resume))
 
     # get data
-    train_dataset = data_set.WildfireSmokeDataset(data_path, root_dir='crops', train_val_test='train', 
+    train_dataset = data_set.WildfireSmokeDataset(data_path, root_dir=data_root_dir, train_val_test='train', 
                                      bands=bands, transform=transforms.Compose([aug.ToTensorTarget()]))
 
-    val_dataset = data_set.WildfireSmokeDataset(data_path, root_dir='crops', train_val_test='valid', 
+    val_dataset = data_set.WildfireSmokeDataset(data_path, root_dir=data_root_dir, train_val_test='valid', 
                                      bands=bands, transform=transforms.Compose([aug.ToTensorTarget()]))
 
     # creating loaders
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=3, num_workers=num_workers, shuffle=False)
+    val_dataloader = DataLoader(val_dataset, batch_size=8, num_workers=num_workers, shuffle=False)
 
     # loggers    
     train_logger = SummaryWriter(f'../logs/run_{run}/training')
@@ -133,7 +136,7 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
                         f"val_loss: {valid_metrics['valid_loss']:.4f}| " + \
                         f"val_acc: {valid_metrics['valid_acc']:.4f}| " + \
                         f"best_model: {is_best}| " + \
-                        f"cur_time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s" + \
+                        f"cur_time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s |" + \
                         f"tot_time: {total_time // 60:.0f}m {total_time % 60:.0f}s",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
 
