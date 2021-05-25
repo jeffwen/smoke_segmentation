@@ -208,10 +208,10 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         
         if idx % 5 == 0:
             progress_logger(f"    epoch: {epoch_num}| " + \
-                            "batch: {idx}| " + \
-                            "train_loss: {train_loss.avg:.4f}| " + \
-                            "train_acc: {train_acc.avg:.4f}| " + \
-                            "train_iou: {train_iou.avg:.4f}",
+                            f"batch: {idx}| " + \
+                            f"train_loss: {train_loss.avg:.4f}| " + \
+                            f"train_acc: {train_acc.avg:.4f}| " + \
+                            f"train_iou: {train_iou.avg:.4f}",
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
         
         # tensorboard logging
@@ -294,10 +294,10 @@ def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_fr
 
             if idx % 5 == 0:
                 progress_logger(f"    epoch: {epoch_num}| " + \
-                                "batch: {idx}| " + \
-                                "val_loss: {valid_loss.avg:.4f}| " + \
-                                "val_acc: {valid_acc.avg:.4f}| " + \
-                                "val_iou: {valid_iou.avg:.4f}",
+                                f"batch: {idx}| " + \
+                                f"val_loss: {valid_loss.avg:.4f}| " + \
+                                f"val_acc: {valid_acc.avg:.4f}| " + \
+                                f"val_iou: {valid_iou.avg:.4f}",
                        log_fn_slug=f"../training_logs/run_{run}_training_log")
 
             # tensorboard logging
