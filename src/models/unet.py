@@ -252,7 +252,7 @@ class UNetSmallMulti(nn.Module):
         # multitask 
         self.multitask4 = multitask_decoding_block(512, 256)
         self.multitask3 = multitask_decoding_block(256, 128)
-        self.multitask2 = multitask_decoding_block(128, 64
+        self.multitask2 = multitask_decoding_block(128, 64)
         self.multitask1 = multitask_decoding_block(64, 32)
         
         # AOD prediction
