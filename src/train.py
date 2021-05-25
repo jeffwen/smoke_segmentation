@@ -133,10 +133,12 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         progress_logger(f"Epoch {epoch}| " + 
                         f"train_loss: {train_metrics['train_loss']:.4f}| " + \
                         f"train_acc: {train_metrics['train_acc']:.4f}| " + \
+                        f"train_iou: {train_metrics['train_iou']:.4f}| " + \
                         f"val_loss: {valid_metrics['valid_loss']:.4f}| " + \
                         f"val_acc: {valid_metrics['valid_acc']:.4f}| " + \
+                        f"val_iou: {valid_metrics['valid_iou']:.4f}| " + \
                         f"best_model: {is_best}| " + \
-                        f"cur_time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s |" + \
+                        f"cur_time: {cur_elapsed // 60:.0f}m {cur_elapsed % 60:.0f}s| " + \
                         f"tot_time: {total_time // 60:.0f}m {total_time % 60:.0f}s",
                log_fn_slug=f"../training_logs/run_{run}_training_log")
 
@@ -162,9 +164,13 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
     Returns:
 
     """
+    # set model to train mode
+    model.train()
+    
     # logging accuracy and loss
     train_acc = metrics.MetricTracker()
     train_loss = metrics.MetricTracker()
+    train_iou = metrics.MetricTracker()
 
     log_iter = len(train_loader)//logger_freq
 
@@ -198,9 +204,14 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
 
         train_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         train_loss.update(loss.item(), outputs.size(0))
+        train_iou.update(metrics.get_iou(outputs, labels), outputs.size(0))
         
         if idx % 5 == 0:
-            progress_logger(f'    epoch: {epoch_num}| batch: {idx}| train_loss: {train_loss.avg:.4f}| train_acc: {train_acc.avg:.4f}', 
+            progress_logger(f"    epoch: {epoch_num}| " + \
+                            "batch: {idx}| " + \
+                            "train_loss: {train_loss.avg:.4f}| " + \
+                            "train_acc: {train_acc.avg:.4f}| " + \
+                            "train_iou: {train_iou.avg:.4f}", 
                    log_fn_slug=f"../training_logs/run_{run}_training_log")
         
         # tensorboard logging
@@ -228,10 +239,10 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
             logger.add_figure('train_images', log_img, step)
             
 
-    print(f"  Training Loss: {train_loss.avg:.4f} Acc: {train_acc.avg:.4f}")
+    print(f"  Training Loss: {train_loss.avg:.4f} Acc: {train_acc.avg:.4f} IoU: {train_iou.avg:.4f}")
     print()
 
-    return {'train_loss': train_loss.avg, 'train_acc': train_acc.avg}
+    return {'train_loss': train_loss.avg, 'train_acc': train_acc.avg, 'train_iou': train_iou.avg}
 
 
 def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_freq=4):
@@ -250,60 +261,67 @@ def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_fr
     # logging accuracy and loss
     valid_acc = metrics.MetricTracker()
     valid_loss = metrics.MetricTracker()
+    valid_iou = metrics.MetricTracker()
 
     log_iter = len(valid_loader)//logger_freq
 
-    # switch to evaluate mode
+    # switch to evaluate mode and turn off gradient tracking
     model.eval()
-
-    # Iterate over data.
-    for idx, data in enumerate(tqdm(valid_loader, desc='validation')):
-
-        # get the inputs and wrap in Variable
-        if torch.cuda.is_available():
-            inputs = Variable(data['sat_img'].cuda(), volatile=True)
-            labels = Variable(data['map_img'].cuda(), volatile=True)
-        else:
-            inputs = Variable(data['sat_img'], volatile=True)
-            labels = Variable(data['map_img'], volatile=True)
-
-        # forward
-        # prob_map = model(inputs) # last activation was a sigmoid
-        # outputs = (prob_map > 0.3).float()
-        outputs = model(inputs)
-        outputs = torch.nn.functional.sigmoid(outputs)
-
-        loss = criterion(outputs, labels)
-
-        valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
-        valid_loss.update(loss.item(), outputs.size(0))
+    with torch.no_grad():  
         
-        if idx % 5 == 0:
-            progress_logger(f'    epoch: {epoch_num}| batch: {idx}| val_loss: {valid_loss.avg:.4f}| val_acc: {valid_acc.avg:.4f}', 
-                   log_fn_slug=f"../training_logs/run_{run}_training_log")
+        # iterate over data
+        for idx, data in enumerate(tqdm(valid_loader, desc='validation')):
 
-        # tensorboard logging
-        if idx % log_iter == 0:
+            # get the inputs and wrap in Variable
+            if torch.cuda.is_available():
+                inputs = Variable(data['sat_img'].cuda(), volatile=True)
+                labels = Variable(data['map_img'].cuda(), volatile=True)
+            else:
+                inputs = Variable(data['sat_img'], volatile=True)
+                labels = Variable(data['map_img'], volatile=True)
 
-            step = (epoch_num*logger_freq)+(idx/log_iter)
+            # forward
+            # prob_map = model(inputs) # last activation was a sigmoid
+            # outputs = (prob_map > 0.3).float()
+            outputs = model(inputs)
+            outputs = torch.nn.functional.sigmoid(outputs)
 
-            # log accuracy and loss
-            info = {
-                'loss': valid_loss.avg,
-                'accuracy': valid_acc.avg
-            }
+            loss = criterion(outputs, labels)
 
-            for tag, value in info.items():
-                logger.add_scalar(tag, value, step)
+            valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
+            valid_loss.update(loss.item(), outputs.size(0))
+            valid_iou.update(metrics.get_iou(outputs, labels), outputs.size(0))
 
-            # log the sample images
-            log_img = data_vis.show_tensorboard_image(data['sat_img'], data['map_img'], outputs)
-            logger.add_figure('valid_images', log_img, step)
+            if idx % 5 == 0:
+                progress_logger(f"    epoch: {epoch_num}| " + \ 
+                                "batch: {idx}| " + \
+                                "val_loss: {valid_loss.avg:.4f}| " + \
+                                "val_acc: {valid_acc.avg:.4f}| " + \
+                                "val_iou: {valid_iou.avg:.4f}", 
+                       log_fn_slug=f"../training_logs/run_{run}_training_log")
 
-    print(f"  Validation Loss: {valid_loss.avg:.4f} Acc: {valid_acc.avg:.4f}")
+            # tensorboard logging
+            if idx % log_iter == 0:
+
+                step = (epoch_num*logger_freq)+(idx/log_iter)
+
+                # log accuracy and loss
+                info = {
+                    'loss': valid_loss.avg,
+                    'accuracy': valid_acc.avg
+                }
+
+                for tag, value in info.items():
+                    logger.add_scalar(tag, value, step)
+
+                # log the sample images
+                log_img = data_vis.show_tensorboard_image(data['sat_img'], data['map_img'], outputs)
+                logger.add_figure('valid_images', log_img, step)
+
+    print(f"  Validation Loss: {valid_loss.avg:.4f} Acc: {valid_acc.avg:.4f} IoU: {valid_iou.avg:.4f}")
     print()
 
-    return {'valid_loss': valid_loss.avg, 'valid_acc': valid_acc.avg}
+    return {'valid_loss': valid_loss.avg, 'valid_acc': valid_acc.avg, 'valid_iou': valid_iou.avg}
 
 
 # create a function to save the model state (https://github.com/pytorch/examples/blob/master/imagenet/main.py)

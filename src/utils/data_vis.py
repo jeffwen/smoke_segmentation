@@ -76,7 +76,27 @@ def show_tensorboard_image(sat_img, map_img, out_img, save_file_path=None):
     batch_size = sat_img.size(0)
     img_num = np.random.randint(batch_size)
     
-    if sat_img.size(1) == 5:
+    if sat_img.size(1) == 6:
+        f, ax = plt.subplots(2, 3, figsize=(12, 8))
+        f.tight_layout()
+        f.subplots_adjust(hspace=.05, wspace=.05)
+        ax = ax.ravel()
+        
+        # plot the true_color and second channel image
+        ax[0].imshow(sat_img[img_num,0:3,:,:].cpu().numpy().transpose((1,2,0)))
+        ax[0].axis('off')
+        ax[1].imshow(sat_img[img_num,3:4,:,:].squeeze().cpu().numpy())
+        ax[1].axis('off')
+        ax[2].imshow(sat_img[img_num,4:5,:,:].squeeze().cpu().numpy())
+        ax[2].axis('off')
+        ax[3].imshow(sat_img[img_num,5:6,:,:].squeeze().cpu().numpy())
+        ax[3].axis('off')
+        ax[4].imshow(map_img[img_num,0,:,:].cpu().numpy())
+        ax[4].axis('off')
+        ax[5].imshow(out_img[img_num,0,:,:].data.cpu().numpy())
+        ax[5].axis('off')
+        
+    elif sat_img.size(1) == 5:
         f, ax = plt.subplots(1, 5, figsize=(12, 5))
         f.tight_layout()
         f.subplots_adjust(hspace=.05, wspace=.05)

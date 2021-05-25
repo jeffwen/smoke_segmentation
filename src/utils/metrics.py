@@ -47,6 +47,18 @@ def jaccard_index(input, target):
         return float('nan')
     else:
         return float(intersection) / float(max(union, 1))
+    
+# https://discuss.pytorch.org/t/understanding-different-metrics-implementations-iou/85817
+def get_iou(outputs, labels, EPS=1e-6):
+    outputs = outputs.int()
+    labels = labels.int()
+    
+    intersection = (outputs & labels).float().sum((1, 2)) 
+    union = (outputs | labels).float().sum((1, 2))
+
+    iou = (intersection + EPS) / (union + EPS)
+
+    return iou.mean()
 
 
 # https://github.com/pytorch/pytorch/issues/1249
