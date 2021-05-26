@@ -52,7 +52,11 @@ class WildfireSmokeDataset(Dataset):
             temp_img_name = os.path.join('../data', self.root_dir, self.train_val_test, self.img_path_df.loc[idx, band])
             
             if band == 'merra2':
-                merra2_img = np.load(temp_img_name)
+                try:
+                    # clip values to between 0 and 5 for merra2
+                    merra2_img = np.clip(np.load(temp_img_name), a_min=0, a_max=5)
+                except ValueError:
+                    print(f"error reading: {temp_img_name}")
                 
             else:
                 temp_img = np.array(Image.open(temp_img_name))
@@ -84,7 +88,8 @@ class WildfireSmokeDataset(Dataset):
             
             # transfrom merra2 separately cause of different scales
             if 'merra2' in self.bands:
-                merra2_img = transforms.functional.to_tensor(merra2_img)
+                #merra2_img = transforms.functional.to_tensor(merra2_img)
+                merra2_img = transforms.functional.normalize(torch.as_tensor(merra2_img).unsqueeze(0), mean=[0.13749852776527405], std=[0.042889975011348724])
                 
                 # concatenate merra2 onto sat image
                 sample['sat_img'] = torch.cat((sample['sat_img'], merra2_img), dim=0)
