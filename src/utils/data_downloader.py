@@ -206,9 +206,10 @@ def aws_goes_download_satpy(year, doy, hour, minute, band, view='C', extra_desc=
         client: client for boto3
     """
 
-    # search string for AWS
-    search_str = "{0}{7}/{1}/{2}/{3}/OR_{0}{7}-M3C{4}_{5}_s{1}{2}{3}{6}".format(product_name,
-                                                                                year,
+    # search string for AWS april 2, 2019 goes default mode changed to M6 scanning
+    #search_str = "{0}{7}/{1}/{2}/{3}/OR_{0}{7}-M3C{4}_{5}_s{1}{2}{3}{6}".format(product_name,
+    search_str = "{0}{7}/{1}/{2}/{3}/OR_{0}{7}-M6C{4}_{5}_s{1}{2}{3}{6}".format(product_name,
+                                                                            year,
                                                                                 str(doy).zfill(3),
                                                                                 str(hour).zfill(2),
                                                                                 str(band).zfill(2),
@@ -290,7 +291,8 @@ def goes_download_wrapper_satpy(smoke_plume_data, temp_data_path, save_data_path
             try:
                 # process using satpy to generate true color image
                 dp.generate_satpy_nc_tiff(bounds=bounds, save_nc_path=save_data_path, base_dir=temp_data_path,
-                           width=4800, height=2700, desc='',
+                           #width=4800, height=2700, desc='',
+                           width=1200, height=1200, desc='',
                            proj_desc='Geodetic Projection', datasets=['true_color', 'C07', 'C11'])
 
             except ValueError:

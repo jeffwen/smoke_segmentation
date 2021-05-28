@@ -5,7 +5,6 @@ import time
 
 from utils import data_prep as dp
 from utils import data_downloader as dd
-from utils import data_vis as dv
 from utils import helpers as h
 
 warnings.simplefilter("ignore", (UserWarning, FutureWarning, RuntimeWarning))
@@ -19,7 +18,7 @@ if __name__ == "__main__":
 
     ## read in plume data
     #plumes_df = gpd.read_file(DATA_FILE_PATH + "smoke_plumes/us_plumes_2018-2020.geojson")
-    plumes_df = gpd.read_file(DATA_FILE_PATH + "smoke_plumes/ca-nv_05-12_plumes_2019-2020.geojson")
+    plumes_df = gpd.read_file(DATA_FILE_PATH + "smoke_plumes/ca-nv_plumes_2019-2020.geojson")
 
     ## temp plume data
 #     temp_plumes_df = plumes_df[(plumes_df['conus_time'].str.slice(0,2)>='12') & (plumes_df['conus_time'].str.slice(0,2)<='23') & (plumes_df['conus_time'].str.slice(2,4).isin(['02','01','31','32']))]

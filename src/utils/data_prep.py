@@ -122,15 +122,15 @@ def format_plume_data(smoke_plume_df):
 
     return smoke_plume_df
 
-def generate_satpy_nc_tiff(bounds, save_nc_path, width=4800, height=2700, base_dir='../data/temp_netcdf/', desc='',
+def generate_satpy_nc_tiff(bounds, save_nc_path, width=1200, height=1200, base_dir='../data/temp_netcdf/', desc='',
                            proj_desc='Geodetic Projection', datasets=['true_color', 'C07', 'C11']):
     """
     Process .nc files with satpy to generate true color and .tiff images
     Args:
         base_dir: temporary directory to store files
         bounds: bounds to help with resampling
-        width: width of final image
-        height: height of final image
+        width: width of final image (4800 or 1200)
+        height: height of final image (2700 or 1200)
         desc: description for satpy
         proj_desc: projection description for satpy
         datasets: satpy datasets to load and save (i.e. true color and different channels)
