@@ -4,14 +4,17 @@ from utils import helpers as h
 from skimage import io
 from PIL import Image
 from tqdm import tqdm
+from rasterio.features import shapes
 
 import shapely
 import rasterio
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import satpy as sp
 import random
 import json
+import os
 
 def year_month_day(datetime_fullstr, datetime_substr):
     """Function to extract the year, month, day, start time, end time, day of year from smoke plume data 
@@ -232,6 +235,55 @@ def img_crop(csv_df, output_size, num_crops, mask_dir="mask", crop_dir="crops", 
             final_c07_img.save(f"../data/{crop_dir}/img/{row.C07.split('.')[0]}_{num_crop}.png", compression=None)
             final_c11_img.save(f"../data/{crop_dir}/img/{row.C11.split('.')[0]}_{num_crop}.png", compression=None)
             final_map_img.save(f"../data/{crop_dir}/mask/{row.mask.split('.')[0]}_{num_crop}.png", compression=None)
+            
+            
+def raster_to_poly(batch_map, batch_fname, orig_bounds=(-124.48200299999999, 32.528832, -114.131211, 42.009502999999995), 
+                   orig_width=1200, orig_height=1200, smooth_size=100):
+    """
+    batch_map
+    batch_fname
+    orig_bounds
+    orig_width
+    orig_height
+    smooth_size
+    """
+    # get shapes
+    N, C, W, H = batch_map.shape
+    
+    # set up transform for polygon coordinates
+    out_west, out_south, out_east, out_north = orig_bounds
+    transform = rasterio.transform.from_bounds(out_west, out_south, out_east, out_north, width=orig_width, height=orig_height)
+    
+    
+    temp_dict = {'Start':[], 'End':[], 'geometry':[]}
+    # iterate over the batch to get polygons
+    # there has to be a faster way to do this....
+    for idx in range(N):
+        
+        # use filename to get start and end strings to match HMS smoke data
+        fname = batch_fname[idx]
+        fname_split = os.path.basename(fname).split('/')[-1].split('_')
+        start_str = fname_split[4]
+        end_str = fname_split[5].split('.')[0]
+        
+        year = start_str[1:5]
+        doy = fname_split[3][-3:]
+        
+        start_time = start_str[-4:]
+        end_time = end_str[-4:]
+        
+        # extracted shapes as iter (sieve to smooth out rough edges...)
+        shapes = rasterio.features.shapes(rasterio.features.sieve(batch_map[idx,0,:,:], smooth_size), transform=transform)
+        for shapedict, value in shapes:
+            
+            # where mask is true save polygon
+            if value == 1.0:
+
+                temp_dict['Start'] += [f"{year}{doy} {start_time}"]
+                temp_dict['End'] += [f"{year}{doy} {end_time}"]
+                temp_dict['geometry'] += [shapely.geometry.shape(shapedict)]
+    
+    return temp_dict
         
 
 ## COCO ANNOTATION 

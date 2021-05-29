@@ -346,7 +346,7 @@ def progress_logger(info_str, log_fn_slug="../training_logs/training_log"):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Road and Building Extraction')
+    parser = argparse.ArgumentParser(description='Wildfire Smoke Training')
     parser.add_argument('data', metavar='DIR',
                         help='path to dataset csv')
     parser.add_argument('--epochs', default=75, type=int, metavar='N',
