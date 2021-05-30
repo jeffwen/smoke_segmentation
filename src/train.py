@@ -23,8 +23,8 @@ import shutil
 import os
 
 
-def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum, bands, run, resume,
-         num_workers=2, logger_freq=4):
+def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum, bands, logger_freq, run, resume,
+        loss_sampling, loss_sample_k, num_workers=2):
     """
 
     Args:
@@ -50,7 +50,13 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
 
     # set up binary cross entropy and dice loss
     #criterion = metrics.BCEDiceLoss()
-    criterion = nn.BCELoss()
+    
+    if loss_sampling:
+        criterion = nn.BCELoss(reduction='none')
+        #criterion = nn.L1Loss(reduction='none')
+    else:
+        criterion = nn.BCELoss()
+        #criterion = nn.L1Loss()
 
     # optimizer
     # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
@@ -108,8 +114,10 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
         lr_scheduler.step()
 
         # run training and validation
-        train_metrics = train(train_dataloader, model, criterion, optimizer, lr_scheduler, train_logger, epoch, run, logger_freq)
-        valid_metrics = validation(val_dataloader, model, criterion, val_logger, epoch, run, logger_freq)
+        train_metrics = train(train_dataloader, model, criterion, optimizer, lr_scheduler, train_logger, epoch, 
+                              run, logger_freq, loss_sampling, loss_sample_k)
+        valid_metrics = validation(val_dataloader, model, criterion, val_logger, epoch, 
+                                   run, logger_freq, loss_sampling)
 
         # store best loss and save a model checkpoint
         is_best = valid_metrics['valid_loss'] < best_loss
@@ -151,7 +159,8 @@ def main(data_path, batch_size, num_epochs, start_epoch, learning_rate, momentum
                log_fn_slug=f"../training_logs/run_{run}_training_log")
 
 
-def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_num, run, logger_freq=4):
+def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_num, run, 
+          logger_freq=4, loss_sampling=False, loss_sample_k=1):
     """
 
     Args:
@@ -196,7 +205,23 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         outputs = model(inputs)
         outputs = torch.nn.functional.sigmoid(outputs)
 
+        # calculate loss
         loss = criterion(outputs, labels)
+        
+        if loss_sampling:
+            # training loss
+            loss = criterion(outputs, labels)
+            # sum loss over the H, W dimensions
+            loss = loss.sum(dim=(2,3), keepdims=True)
+
+            # get the top k loss from batch and set to 0
+            # so that these data points don't contribute to update
+            idx = torch.topk(loss, k=loss_sample_k, dim=0)[1]
+            loss.scatter_(dim=0, idx, 0)
+            
+            # only avg loss over low loss samples
+            num_good_training_samples = loss.shape[0]-loss_sample_k
+            loss = loss.sum().div(num_good_training_samples)
                 
         # backward
         loss.backward()
@@ -245,7 +270,7 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
     return {'train_loss': train_loss.avg, 'train_acc': train_acc.avg, 'train_iou': train_iou.avg}
 
 
-def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_freq=4):
+def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_freq=4, loss_sampling=False):
     """
 
     Args:
@@ -286,7 +311,12 @@ def validation(valid_loader, model, criterion, logger, epoch_num, run, logger_fr
             outputs = model(inputs)
             outputs = torch.nn.functional.sigmoid(outputs)
 
+            # calculate loss
             loss = criterion(outputs, labels)
+            
+            if loss_sampling:
+                loss = loss.mean()
+
 
             valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
             valid_loss.update(loss.item(), outputs.size(0))
@@ -367,11 +397,15 @@ if __name__ == '__main__':
                         help='number of run (for tensorboard logging)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')
+    parser.add_argument('--loss-sampling', action='store_true',
+                        help='Set high loss training samples in a batch to 0')
+    parser.add_argument('--loss-sample-k', default=1, type=int, metavar='N',
+                        help='number of high loss samples to drop from gradient update')
 
     args = parser.parse_args()
 
     # check if there are previous runs
-    experiments = [int(run_dir.split('_')[1]) for run_dir in os.listdir('../logs') if run_dir!='.DS_Store']
+    experiments = [int(run_dir.split('_')[1]) for run_dir in os.listdir('../logs') if run_dir not in ['.DS_Store', 'old_runs']]
     if args.run not in experiments:
         run_num = args.run
     elif (len(experiments) > 0):
@@ -379,4 +413,5 @@ if __name__ == '__main__':
 
     # run training
     main(args.data, batch_size=args.batch_size, num_epochs=args.epochs, start_epoch=args.start_epoch, learning_rate=args.lr,
-         momentum=args.momentum, bands=args.bands, logger_freq=args.logger_freq, run=run_num, resume=args.resume)
+         momentum=args.momentum, bands=args.bands, logger_freq=args.logger_freq, run=run_num, resume=args.resume, 
+         loss_sampling=args.loss_sampling, loss_sample_k=args.loss_sample_k)
