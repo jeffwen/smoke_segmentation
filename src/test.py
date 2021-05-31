@@ -4,16 +4,13 @@ warnings.simplefilter("ignore", (UserWarning, FutureWarning))
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
-from utils import data_prep as dp
 
 from utils import data_set
 from utils import data_vis
 from models import unet
 
-import geopandas as gpd
 import torch
 import argparse
-import os
 
 
 def main(data_dir, out_file, batch_size, bands, model_path, num_workers):
@@ -30,7 +27,8 @@ def main(data_dir, out_file, batch_size, bands, model_path, num_workers):
     model.load_state_dict(model_dict['state_dict'])
     
     # store generate polygons
-    smoke_dict_list = []
+    #smoke_dict_list = []
+    out_map_store_dict = {'out_map':[], 'fname':[]}
     
     # switch to evaluation mode and don't track gradients
     model.eval()
@@ -51,44 +49,21 @@ def main(data_dir, out_file, batch_size, bands, model_path, num_workers):
             # threshold and turn into mask
             out_maps = (out_probs > 0.3).int().detach().numpy()
             
-            # get polygons from predicted rasters
-            temp_dict = dp.raster_to_poly(out_maps, fname)
+            # store the prediction maps
+            out_map_store_dict['out_map'].append(out_maps)
+            out_map_store_dict['fname'].append(fname)
             
-            smoke_dict_list.append(temp_dict)
+    # store output dict as pickle for parallel raster to poly
+    with open(f'{out_file}', 'wb') as f:
+        pickle.dump(out_map_store_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # generate one smoke dict for whole dataset
-    smoke_dict = {'Start':[], 'End':[], 'geometry':[]}      
     
-    for temp_dict in smoke_dict_list:
-        smoke_dict['Start'] += temp_dict['Start']
-        smoke_dict['End'] += temp_dict['End']
-        smoke_dict['geometry'] += temp_dict['geometry']
-
-    # get geodataframe
-    smoke_df = gpd.GeoDataFrame(smoke_dict, crs="EPSG:4326")
-
-
-    if smoke_df.shape[0] != 0:
-
-        # format plumes by creating intermediate features
-        smoke_df = dp.format_plume_data(smoke_df)
-
-        try: 
-    	    # save output as geojson of smoke polygons
-    	    smoke_df.to_file(out_file, driver='GeoJSON')
-        except ValueError as e:
-            print(f"No smoke plumes to write using model {model_path} with error: {e}")
-
-    else:
-        print(f"No smoke plumes to write using model {model_path}")
-    
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Wildfire Smoke Prediction')
     parser.add_argument('data_dir', metavar='DIR',
                         help='path to directory of test image files')
     parser.add_argument('--out_file', type=str, metavar='PATH',
-                        help='path to output geojson')
+                        help='path to output file')
     parser.add_argument('-b', '--batch_size', default=3, type=int,
                         metavar='N', 
                         help='mini-batch size (default: 3)')
