@@ -211,16 +211,19 @@ def train(train_loader, model, criterion, optimizer, scheduler, logger, epoch_nu
         if loss_sampling:
             # training loss
             loss = criterion(outputs, labels)
-            # sum loss over the H, W dimensions
-            loss = loss.sum(dim=(2,3), keepdims=True)
+
+            N, C, H, W = loss.shape
+
+            # sum loss over the H, W dimensions and take avg (like usual)
+            loss = loss.sum(dim=(2,3), keepdims=True).div(H*W)
 
             # get the top k loss from batch and set to 0
             # so that these data points don't contribute to update
-            idx = torch.topk(loss, k=loss_sample_k, dim=0)[1]
-            loss.scatter_(dim=0, idx, 0)
+            topk_idx = torch.topk(loss, k=loss_sample_k, dim=0)[1]
+            loss.scatter_(0, topk_idx, 0)
             
-            # only avg loss over low loss samples
-            num_good_training_samples = loss.shape[0]-loss_sample_k
+            # only avg loss over remaining low loss samples
+            num_good_training_samples = N-loss_sample_k
             loss = loss.sum().div(num_good_training_samples)
                 
         # backward
