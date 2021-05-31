@@ -11,6 +11,7 @@ from models import unet
 
 import torch
 import argparse
+import pickle
 
 
 def main(data_dir, out_file, batch_size, bands, model_path, num_workers):
