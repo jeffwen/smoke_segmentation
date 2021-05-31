@@ -67,11 +67,20 @@ def main(data_dir, out_file, batch_size, bands, model_path, num_workers):
     # get geodataframe
     smoke_df = gpd.GeoDataFrame(smoke_dict, crs="EPSG:4326")
 
-    # format plumes by creating intermediate features
-    smoke_df = dp.format_plume_data(smoke_df)
-    
-    # save output as geojson of smoke polygons
-    smoke_df.to_file(out_file, driver='GeoJSON')
+
+    if smoke_df.shape[0] != 0:
+
+        # format plumes by creating intermediate features
+        smoke_df = dp.format_plume_data(smoke_df)
+
+        try: 
+    	    # save output as geojson of smoke polygons
+    	    smoke_df.to_file(out_file, driver='GeoJSON')
+        except ValueError as e:
+            print(f"No smoke plumes to write using model {model_path} with error: {e}")
+
+    else:
+        print(f"No smoke plumes to write using model {model_path}")
     
 
 if __name__ == '__main__':

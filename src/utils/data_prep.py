@@ -105,9 +105,10 @@ def format_plume_data(smoke_plume_df):
     smoke_plume_df['start_time'] = smoke_plume_df['Start'].apply(lambda x: year_month_day(x, '%H%M'))
     smoke_plume_df['end_time'] = smoke_plume_df['End'].apply(lambda x: year_month_day(x, '%H%M'))
 
-    # remove non CONUS or FD images (filter for min time stamps of just CONUS and FD)
-    conus_min = [str(num).zfill(2) for num in np.arange(2, 60, 5)]
-    fd_min = [str(num).zfill(2) for num in np.arange(0, 60, 15)]
+    # remove non CONUS or FD images (filter for min time stamps of just CONUS and FD) 
+    # add in post april 2, 2019 scan changes
+    conus_min = [str(num).zfill(2) for num in np.arange(2, 60, 5)] + [str(num).zfill(2) for num in np.arange(1, 60, 5)]
+    fd_min = [str(num).zfill(2) for num in np.arange(0, 60, 15)] + [str(num).zfill(2) for num in np.arange(0, 60, 10)]
     smoke_plume_df['view'] = np.where(smoke_plume_df['start_time'].str.slice(2, 4).isin(conus_min), 'C',
                               np.where(smoke_plume_df['start_time'].str.slice(2, 4).isin(fd_min), 'F', 'other'))
         
