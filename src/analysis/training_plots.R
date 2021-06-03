@@ -29,20 +29,48 @@ dataFormatter <- function(run, data, avg_window=500){
 }
 
 ## combine training run logs for training and val 
-runs <- c(4,5)
+runs <- c(0,3,4,6)
 train_df <- lapply(runs, FUN=dataFormatter, data="train") %>% 
     bind_rows() %>% 
     mutate(run=ordered(run, levels=runs))
 val_df <- lapply(runs, FUN=dataFormatter, data="val") %>% 
     bind_rows() %>% 
-    mutate(run=ordered(run, levels=runs))
+    mutate(run=ordered(run, levels=runs),
+           id=((id - min(val_df$id)) * 
+                   (max(train_df$id) - min(train_df$id)))/
+               (max(id) - min(id)) + min(train_df$id)) 
 
-## plot training curves
+plot_df <- bind_rows(train_df, val_df)
+
+## plot accuracy curves
 num_breaks <- 5
-ggplot(data=train_df) + 
+p1 <- ggplot(data=plot_df, aes(linetype=Data)) + 
     theme_minimal(base_size=12) + 
-    geom_line(aes(x=id, y=avg_acc, color=run), size=1) + 
+    theme(legend.position="bottom") + 
+    geom_line(aes(x=id, y=avg_acc, color=run), data=train_df) + 
+    geom_line(aes(x=id, y=avg_acc, color=run), data=val_df) + 
+    lims(y=c(0,0.15)) + 
     scale_x_continuous(breaks=quantile(train_df$id, probs=c(1:num_breaks)/num_breaks), 
                        labels=seq(1,21,num_breaks)) + 
-    labs(y='Avg. dice coefficient', x='Epoch', color='Run')
+    scale_color_discrete(name="Run", labels=c("1 band", "3 band", "4 band", "3 band loss sampling")) +
+    labs(y='', x='Epoch', color='Run', subtitle='Avg. Dice coefficient') + 
+    guides(color=guide_legend(nrow=2), linetype=guide_legend(nrow=2))
+
+
+## plot loss curves
+p2 <- ggplot(data=plot_df, aes(linetype=Data)) + 
+    theme_minimal(base_size=12) +
+    theme(legend.position="none") + 
+    geom_line(aes(x=id, y=avg_loss, color=run), data=train_df) + 
+    geom_line(aes(x=id, y=avg_loss, color=run), data=val_df) + 
+    scale_x_continuous(breaks=quantile(train_df$id, probs=c(1:num_breaks)/num_breaks), 
+                       labels=seq(1,21,num_breaks)) + 
+    scale_color_discrete(name="Run", labels=c("1 band", "3 band", "4 band", "3 band loss sampling")) + 
+    lims(y=c(0.1, 0.7))+
+    labs(y='', x='Epoch', color='Run', subtitle='Avg. Binary cross entropy loss') + 
+    guides(color=guide_legend(nrow=2), linetype=guide_legend(nrow=2))
+
+
+p_final <- cowplot::plot_grid(p1, p2, ncol=1)
+cowplot::save_plot("etc/figures/training_curves.png", p_final, base_width=5, base_height=7)
 

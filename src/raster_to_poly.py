@@ -1,5 +1,7 @@
 from joblib import Parallel, delayed, cpu_count
 from utils import data_prep as dp
+from tqdm import tqdm
+
 import geopandas as gpd
 import pickle
 import argparse
@@ -27,8 +29,13 @@ def main(pickle_path, out_path):
         out_map_store_dict = pickle.load(f)
         
     # get the smoke polygons
-    smoke_dict_list = Parallel(n_jobs=NUM_CPU)(delayed(raster_to_poly_wrapper)(i=i, out_map_store_dict=out_map_store_dict)\
-                                               for i in range(len(out_map_store_dict['fname'])))
+#     smoke_dict_list = Parallel(n_jobs=NUM_CPU)(delayed(raster_to_poly_wrapper)(i=i, out_map_store_dict=out_map_store_dict)\
+#                                                for i in range(len(out_map_store_dict['fname'])))
+
+
+    smoke_dict_list = []
+    for i in tqdm(range(len(out_map_store_dict['fname'])), desc='raster_to_poly'):
+        smoke_dict_list += raster_to_poly_wrapper(i, out_map_store_dict)
 
     # generate one smoke dict for whole dataset
     smoke_dict = {'Start':[], 'End':[], 'geometry':[]}      
@@ -36,7 +43,7 @@ def main(pickle_path, out_path):
     for temp_dict_element in smoke_dict_list:
         
         # joblib returns list
-        temp_dict = temp_dict_element[0]
+        temp_dict = temp_dict_element
         
         smoke_dict['Start'] += temp_dict['Start']
         smoke_dict['End'] += temp_dict['End']
