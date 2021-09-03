@@ -134,20 +134,27 @@ ggplot() +
           plot.margin = unit(c(0, 0, 0, 0), "in"),
           panel.grid.major = element_line(colour = "gray95")) + 
     geom_sf(data=keep_shp, fill=NA) + 
-    geom_sf(data=smoke_df %>% filter(month=='09', day=="08", start_time<"2200"), aes(fill="Smoke"), color="gray80", alpha=0.25, show.legend=T) +
+    geom_sf(data=smoke_df %>% filter(year=='2020', month=='09', day=="08", start_time<"2200"), aes(fill="Smoke"), color="gray80", alpha=0.25, show.legend=T) +
     scale_fill_manual(name="Smoke", values=c("Smoke"="gray80"), labels=c("Smoke"=""),
                       guide = guide_legend(override.aes = list(linetype="blank", shape=NA))) 
 
-# 
-# 
+
+ggplot() + 
+    theme_minimal(base_size=12) + 
+    theme(legend.position="right",
+          plot.margin = unit(c(0, 0, 0, 0), "in"),
+          panel.grid.major = element_line(colour = "gray95")) + 
+    geom_sf(data=keep_shp, fill=NA) + 
+    geom_sf(data=pred_smoke_list[[3]] %>% filter(year=='2020', month=='09', day=="08", start_time<"2205"), aes(fill="Smoke"), color="gray80", alpha=0.25, show.legend=T) +
+    scale_fill_manual(name="Smoke", values=c("Smoke"="gray80"), labels=c("Smoke"=""),
+                      guide = guide_legend(override.aes = list(linetype="blank", shape=NA))) 
+
+
 # ## see duplicates
 # epa_df[duplicated(paste0(epa_df$date,"_",epa_df$id)),]
 # epa_df %>% filter(id==60510001, date=="2020-07-17")
 
-#pbmclapply(X=c("2019-09-05"), FUN=countSmokeOverlaps, epa_data=epa_df, smoke_data=smoke_df)
-
-# blah <- data.frame(x=c(1:10), y=exp(c(1:10)), c=rep(1:5, each=2))
-# what <- fixest::feols(y~x|c, data=blah)
+# pbmclapply(X=c("2019-09-05"), FUN=countSmokeOverlaps, epa_data=epa_df, smoke_data=smoke_df)
 
 # epa_mod_1_df <- pbmclapply(X=unique(smoke_df$date), FUN=countSmokeOverlaps, epa_data=epa_df, smoke_data=smoke_df) %>% 
 #     bind_rows()

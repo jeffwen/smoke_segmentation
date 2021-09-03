@@ -9,3 +9,6 @@ etc/*
 checkpoints/*
 logs/*
 training_logs/*
+src/train_pipeline/*
+src/utils/data_loader.py
+notebooks/*

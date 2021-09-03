@@ -45,7 +45,7 @@ plot_df <- bind_rows(train_df, val_df)
 ## plot accuracy curves
 num_breaks <- 5
 p1 <- ggplot(data=plot_df, aes(linetype=Data)) + 
-    theme_minimal(base_size=12) + 
+    theme_minimal(base_size=11) + 
     theme(legend.position="bottom") + 
     geom_line(aes(x=id, y=avg_acc, color=run), data=train_df) + 
     geom_line(aes(x=id, y=avg_acc, color=run), data=val_df) + 
@@ -59,7 +59,7 @@ p1 <- ggplot(data=plot_df, aes(linetype=Data)) +
 
 ## plot loss curves
 p2 <- ggplot(data=plot_df, aes(linetype=Data)) + 
-    theme_minimal(base_size=12) +
+    theme_minimal(base_size=11) +
     theme(legend.position="none") + 
     geom_line(aes(x=id, y=avg_loss, color=run), data=train_df) + 
     geom_line(aes(x=id, y=avg_loss, color=run), data=val_df) + 
